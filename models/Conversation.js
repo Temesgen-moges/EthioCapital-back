@@ -6,25 +6,30 @@ const ConversationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "BusinessIdea",
       required: true,
-    }, // Link to the idea
+      index: true, // Add index for faster lookups by idea
+    },
     participants: {
       type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-      validate: [
-        arrayLimit,
-        "A conversation must have exactly two participants.",
-      ],
+      required: true,
+      validate: {
+        validator: (val) => val.length >= 2, // Minimum 2 participants, allows group chats
+        message: "A conversation must have at least two participants.",
+      },
+      index: true, // Index for querying by participants
     },
     lastMessage: {
-      text: String,
-      timestamp: Date,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message", // Reference the Message model instead of duplicating data
+      default: null,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true, // createdAt, updatedAt
+  }
 );
 
-function arrayLimit(val) {
-  return val.length === 2;
-}
+// Compound index for queries filtering by idea and participants
+ConversationSchema.index({ idea: 1, participants: 1 }, { unique: true });
 
 const Conversation = mongoose.model("Conversation", ConversationSchema);
 

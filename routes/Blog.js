@@ -1,6 +1,6 @@
 import express from "express";
 import { getBlogs, getBlogById, createBlog, updateBlog, deleteBlog } from "../controllers/blogs/BlogController.js";
-import { authenticate } from "../middleware/Authenticate.js";
+import {authenticate }  from "../middleware/Authenticate.js";
 const blogRouter = express.Router();
 
 blogRouter.get("/blogs", authenticate, getBlogs);

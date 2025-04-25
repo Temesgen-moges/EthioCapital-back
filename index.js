@@ -1,74 +1,358 @@
-// server.js
-import express from "express";
-import bodyParser from "body-parser";
-import cors from "cors";
-import dotenv from "dotenv";
-import authRouter from "./routes/Auth.js";
-import businessRouter from "./routes/BusinessIdeas.js";
-import blogRouter from "./routes/Blog.js";
-import userRouter from "./routes/User.js";
-import http from "http";
-import { Server } from "socket.io";
-import Message from "./models/Message.js";
-import messageRouter from "./routes/Message.js";
-import connectDB from "./util/ConnectDb.js"; // Updated import for Mongoose connection
+// import express from 'express';
+// import cors from 'cors';
+// import dotenv from 'dotenv';
+// import { Server } from 'socket.io';
+// import http from 'http';
+// import path from 'path';
+// import jwt from 'jsonwebtoken';
+// import authRouter from './routes/Auth.js';
+// import businessRouter from './routes/BusinessIdeas.js';
+// import blogRouter from './routes/Blog.js';
+// import userRouter from './routes/User.js';
+// import messageRouter from './routes/Message.js';
+// import messageController from './controllers/chat/Message.js';
+// import connectDB from './util/ConnectDb.js';
+// import verifyRouter from './routes/verificationRoutes.js';
+// import documentAccessRouter from './routes/DocumentAccess.js';
+// import investmentRouter from './routes/Investment.js';
+// import studentApplicationRouter from './routes/StudentApplication.js';
+// import boardRouter from './routes/board.js';
+// import fundReleaseRouter from './routes/fundReleaseRoutes.js';
+
+// dotenv.config();
+
+// const app = express();
+// const server = http.createServer(app);
+// const io = new Server(server, {
+//   cors: {
+//     origin: 'http://localhost:3000',
+//     methods: ['GET', 'POST'],
+//     credentials: true,
+//   },
+// });
+
+// // Middleware
+// app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+// app.use(express.json({ limit: '50mb' }));
+// app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// app.use('/uploads', express.static(path.join(process.cwd(), 'Uploads')));
+// app.use('/uploads/images', express.static(path.join(process.cwd(), 'Uploads/images')));
+// app.use('/uploads/documents', express.static(path.join(process.cwd(), 'Uploads/documents')));
+
+// // Request logging
+// app.use((req, res, next) => {
+//   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`, {
+//     body: req.method === 'POST' || req.method === 'PUT' ? req.body : undefined,
+//     headers: { authorization: req.headers.authorization?.substring(0, 20) + '...' },
+//   });
+//   next();
+// });
+
+// // Attach Socket.IO to app for controllers
+// app.set('io', io); // Added for fundReleaseController.js
+
+// // Keep req.io for backward compatibility
+// app.use((req, res, next) => {
+//   req.io = io;
+//   next();
+// });
+
+// // MongoDB connection with error handling
+// connectDB().catch((error) => {
+//   console.error('[Server] MongoDB connection failed:', {
+//     message: error.message,
+//     stack: error.stack,
+//   });
+//   process.exit(1);
+// });
+
+// // Message controller
+// const messageControllerInstance = messageController(io);
+// const {
+//   fetchMessages,
+//   conversationFetch,
+//   updateIsNewMessage,
+//   fetchUserMessages,
+//   sendMessage,
+//   getConversationsByIdea,
+// } = messageControllerInstance;
+
+// // Routes
+// app.use('/api/v1', authRouter);
+// app.use('/api/v1', businessRouter);
+// app.use('/api/v1', blogRouter);
+// app.use('/api/v1', userRouter);
+// app.use('/api/v1', verifyRouter);
+// app.use('/api/v1', messageRouter({
+//   fetchMessages,
+//   conversationFetch,
+//   updateIsNewMessage,
+//   fetchUserMessages,
+//   sendMessage,
+//   getConversationsByIdea,
+// }));
+// app.use('/api/v1/document-access', documentAccessRouter);
+// app.use('/api/v1', investmentRouter);
+// app.use('/api/v1', studentApplicationRouter);
+// app.use('/api/v1', boardRouter);
+// app.use('/api/v1/fund-release', fundReleaseRouter);
+
+// // Redirect for success page
+// app.get('/success', (req, res) => {
+//   res.redirect('http://localhost:3000/success');
+// });
+
+// // Error handling middleware
+// app.use((err, req, res, next) => {
+//   console.error(`[${new Date().toISOString()}] Server error:`, {
+//     message: err.message,
+//     stack: err.stack,
+//   });
+//   res.status(err.status || 500).json({
+//     success: false,
+//     message: err.message || 'Server error',
+//   });
+// });
+
+// // Socket.IO connection
+// io.on('connection', (socket) => {
+//   console.log('[Socket.IO] New client connected:', socket.id);
+
+//   const token = socket.handshake.auth.token;
+//   if (token) {
+//     try {
+//       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//       socket.userId = decoded.id; // Keep id for compatibility
+//       socket.join(decoded.id);
+//       console.log(`[Socket.IO] Socket ${socket.id} joined user room ${decoded.id}`);
+//     } catch (error) {
+//       console.error('[Socket.IO] Socket auth error:', {
+//         message: error.message,
+//         stack: error.stack,
+//       });
+//       socket.disconnect();
+//     }
+//   }
+
+//   socket.on('joinUserRoom', (userId) => {
+//     if (!userId) {
+//       console.warn('[Socket.IO] joinUserRoom: No userId provided');
+//       return;
+//     }
+//     socket.join(userId);
+//     console.log(`[Socket.IO] Socket ${socket.id} joined user room ${userId}`);
+//   });
+
+//   socket.on('joinRoom', (conversationId) => {
+//     if (!conversationId) {
+//       console.warn('[Socket.IO] joinRoom: No conversationId provided');
+//       return;
+//     }
+//     socket.join(conversationId);
+//     console.log(`[Socket.IO] Socket ${socket.id} joined room ${conversationId}`);
+//   });
+
+//   socket.on('joinBusinessRoom', (businessIdeaId) => {
+//     if (!businessIdeaId) {
+//       console.warn('[Socket.IO] joinBusinessRoom: No businessIdeaId provided');
+//       return;
+//     }
+//     const room = `business:${businessIdeaId}`;
+//     socket.join(room);
+//     console.log(`[Socket.IO] Socket ${socket.id} joined business room ${room}`);
+//   });
+
+//   socket.on('disconnect', () => {
+//     console.log('[Socket.IO] Client disconnected:', socket.id);
+//   });
+// });
+
+// const PORT = process.env.PORT || 3001;
+// server.listen(PORT, () => {
+//   console.log(`Server running at http://localhost:${PORT}/`);
+// });
+
+// export default app;
+
+
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { Server } from 'socket.io';
+import http from 'http';
+import path from 'path';
+import jwt from 'jsonwebtoken';
+import authRouter from './routes/Auth.js';
+import businessRouter from './routes/BusinessIdeas.js';
+import blogRouter from './routes/Blog.js';
+import userRouter from './routes/User.js';
+import messageRouter from './routes/Message.js';
+import messageController from './controllers/chat/Message.js';
+import connectDB from './util/ConnectDb.js';
+import verifyRouter from './routes/verificationRoutes.js';
+import documentAccessRouter from './routes/DocumentAccess.js';
+import investmentRouter from './routes/Investment.js';
+import studentApplicationRouter from './routes/StudentApplication.js';
+import boardRouter from './routes/board.js';
+import fundReleaseRouter from './routes/fundReleaseRoutes.js';
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: { origin: '*' },
+  cors: {
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
 });
 
-app.use(cors());
-app.use(express.json());
-app.use(bodyParser.json({ limit: "30mb", extended: true }));
-app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
-app.use('/uploads', express.static('uploads'));
+// Middleware
+app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use('/uploads', express.static(path.join(process.cwd(), 'Uploads')));
+app.use('/uploads/images', express.static(path.join(process.cwd(), 'Uploads/images')));
+app.use('/uploads/documents', express.static(path.join(process.cwd(), 'Uploads/documents')));
 
-// Connect to MongoDB via Mongoose
-connectDB();
-
-// Set up socket.io connection handlers
-io.on("connection", (socket) => {
-    console.log("new client connected: ", socket.id);
-
-    socket.on("joinRoom", (conversationId) => {
-        socket.join(conversationId);
-        console.log(`Socket ${socket.id} joined room ${conversationId}`);
-    });
-
-    socket.on("sendMessage", async (data) => {
-        console.log("message sent: ", data);
-        try {
-            const message = new Message(data);
-            await message.save();
-            console.log("message saved: ", message);
-            io.to(message.conversationId).emit("message", message);
-        } catch (error) {
-            console.error("Error sending message:", error);
-        }
-    });
-
-    socket.on("receiveMessage", (data) => {
-        console.log("received message: ", data);
-    });
-
-    socket.on("disconnect", () => {
-        console.log("client disconnected: ", socket.id);
-    });
+// Request logging
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`, {
+    body: req.method === 'POST' || req.method === 'PUT' ? req.body : undefined,
+    headers: { authorization: req.headers.authorization?.substring(0, 20) + '...' },
+  });
+  next();
 });
 
-app.use("/api/v1", authRouter);
-app.use("/api/v1", businessRouter);
-app.use("/api/v1", blogRouter);
-app.use("/api/v1", userRouter);
-app.use("/api/v1", messageRouter);
-app.use("/api/v1", )
+// Attach Socket.IO to app for controllers
+app.set('io', io);
 
+// Keep req.io for backward compatibility
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
-const PORT = 3001;
+// MongoDB connection with error handling
+connectDB().catch((error) => {
+  console.error('[Server] MongoDB connection failed:', {
+    message: error.message,
+    stack: error.stack,
+  });
+  process.exit(1);
+});
+
+// Message controller (for user-to-user chat)
+const messageControllerInstance = messageController(io);
+const {
+  fetchMessages,
+  conversationFetch,
+  updateIsNewMessage,
+  fetchUserMessages,
+  sendMessage,
+  getConversationsByIdea,
+} = messageControllerInstance;
+
+// Routes
+app.use('/api/v1', authRouter);
+app.use('/api/v1', businessRouter);
+app.use('/api/v1', blogRouter);
+app.use('/api/v1', userRouter);
+app.use('/api/v1', verifyRouter);
+app.use('/api/v1', messageRouter({
+  fetchMessages,
+  conversationFetch,
+  updateIsNewMessage,
+  fetchUserMessages,
+  sendMessage,
+  getConversationsByIdea,
+}));
+app.use('/api/v1/document-access', documentAccessRouter);
+app.use('/api/v1', investmentRouter);
+app.use('/api/v1', studentApplicationRouter);
+app.use('/api/v1', boardRouter);
+console.log('[Server] Mounted boardRouter at /api/v1/board');
+app.use('/api/v1/fund-release', fundReleaseRouter);
+
+// Redirect for success page
+app.get('/success', (req, res) => {
+  res.redirect('http://localhost:3000/success');
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(`[${new Date().toISOString()}] Server error:`, {
+    message: err.message,
+    stack: err.stack,
+  });
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Server error',
+  });
+});
+
+// Socket.IO connection
+io.on('connection', (socket) => {
+  console.log('[Socket.IO] New client connected:', socket.id);
+
+  const token = socket.handshake.auth.token;
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      socket.userId = decoded.id || decoded.userId; // Support both id and userId
+      if (!socket.userId) {
+        throw new Error('No userId in JWT payload');
+      }
+      socket.join(socket.userId);
+      console.log(`[Socket.IO] Socket ${socket.id} joined user room ${socket.userId}`);
+    } catch (error) {
+      console.error('[Socket.IO] Socket auth error:', {
+        message: error.message,
+        stack: error.stack,
+      });
+      socket.disconnect();
+    }
+  } else {
+    console.warn('[Socket.IO] No token provided for socket:', socket.id);
+  }
+
+  socket.on('joinUserRoom', (userId) => {
+    if (!userId) {
+      console.warn('[Socket.IO] joinUserRoom: No userId provided');
+      return;
+    }
+    socket.join(userId);
+    console.log(`[Socket.IO] Socket ${socket.id} joined user room ${userId}`);
+  });
+
+  socket.on('joinRoom', (room) => {
+    if (!room) {
+      console.warn('[Socket.IO] joinRoom: No room provided');
+      return;
+    }
+    socket.join(room);
+    console.log(`[Socket.IO] Socket ${socket.id} joined room ${room}`);
+  });
+
+  socket.on('joinBusinessRoom', (businessIdeaId) => {
+    if (!businessIdeaId) {
+      console.warn('[Socket.IO] joinBusinessRoom: No businessIdeaId provided');
+      return;
+    }
+    const room = `business:${businessIdeaId}`;
+    socket.join(room);
+    console.log(`[Socket.IO] Socket ${socket.id} joined business room ${room}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('[Socket.IO] Client disconnected:', socket.id);
+  });
+});
+
+const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}/`);
+  console.log(`Server running at http://localhost:${PORT}/`);
 });
+
+export default app;
