@@ -174,7 +174,6 @@
 
 // export default app;
 
-
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -200,25 +199,57 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+
+// Define allowed origins
+const allowedOrigins = [
+  'https://ethio-capital-15.vercel.app',
+  'http://localhost:3000',
+];
+
+// CORS configuration for Express
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g., server-to-server or Postman)
+    if (!origin) return callback(null, true);
+    // Check if the origin is in the allowed list
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS] Blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
+}));
+
+// CORS configuration for Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: 'https://ethio-capital-15.vercel.app/',
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn(`[Socket.IO CORS] Blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST'],
     credentials: true,
   },
 });
 
 // Middleware
-app.use(cors({ origin: 'https://ethio-capital-15.vercel.app/', credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use('/uploads', express.static(path.join(process.cwd(), 'Uploads')));
 app.use('/uploads/images', express.static(path.join(process.cwd(), 'Uploads/images')));
-app.use('/uploads/documents', express.static(path.join(process.cwd(), 'Uploads/documents')));
+app.use('/Uploads/documents', express.static(path.join(process.cwd(), 'Uploads/documents')));
 
 // Request logging
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`, {
+    origin: req.headers.origin,
     body: req.method === 'POST' || req.method === 'PUT' ? req.body : undefined,
     headers: { authorization: req.headers.authorization?.substring(0, 20) + '...' },
   });
@@ -277,7 +308,7 @@ app.use('/api/v1/fund-release', fundReleaseRouter);
 
 // Redirect for success page
 app.get('/success', (req, res) => {
-  res.redirect('https://ethio-capital-15.vercel.app//success');
+  res.redirect('https://ethio-capital-15.vercel.app/success');
 });
 
 // Error handling middleware
@@ -285,6 +316,7 @@ app.use((err, req, res, next) => {
   console.error(`[${new Date().toISOString()}] Server error:`, {
     message: err.message,
     stack: err.stack,
+    origin: req.headers.origin,
   });
   res.status(err.status || 500).json({
     success: false,
