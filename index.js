@@ -25,14 +25,14 @@
 // const server = http.createServer(app);
 // const io = new Server(server, {
 //   cors: {
-//     origin: 'http://localhost:3000',
+//     origin: 'https://ethio-capital-15.vercel.app/',
 //     methods: ['GET', 'POST'],
 //     credentials: true,
 //   },
 // });
 
 // // Middleware
-// app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+// app.use(cors({ origin: 'https://ethio-capital-15.vercel.app/', credentials: true }));
 // app.use(express.json({ limit: '50mb' }));
 // app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // app.use('/uploads', express.static(path.join(process.cwd(), 'Uploads')));
@@ -99,7 +99,7 @@
 
 // // Redirect for success page
 // app.get('/success', (req, res) => {
-//   res.redirect('http://localhost:3000/success');
+//   res.redirect('https://ethio-capital-15.vercel.app//success');
 // });
 
 // // Error handling middleware
@@ -202,14 +202,14 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:3000',
+    origin: 'https://ethio-capital-15.vercel.app/',
     methods: ['GET', 'POST'],
     credentials: true,
   },
 });
 
 // Middleware
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+app.use(cors({ origin: 'https://ethio-capital-15.vercel.app/', credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use('/uploads', express.static(path.join(process.cwd(), 'Uploads')));
@@ -277,7 +277,7 @@ app.use('/api/v1/fund-release', fundReleaseRouter);
 
 // Redirect for success page
 app.get('/success', (req, res) => {
-  res.redirect('http://localhost:3000/success');
+  res.redirect('https://ethio-capital-15.vercel.app//success');
 });
 
 // Error handling middleware
