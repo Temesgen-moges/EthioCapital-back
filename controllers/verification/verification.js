@@ -1,13 +1,13 @@
 import Verification from "../../models/Verification.js"; // Adjust path to your Verification model
 
 // Create a new verification
+import path from 'path';
+
 export const createVerification = async (req, res) => {
   try {
     console.log("Creating verification with data:", req.body, req.files);
     const { fullName, phone, investmentCapacity, experience, ideaId } = req.body;
-    const idPictureUrl = req.files?.idPicture?.[0]?.path.replace(/\\/g, "/") || ""; // Normalize slashes
-    const profilePictureUrl = req.files?.profilePicture?.[0]?.path.replace(/\\/g, "/") || "";
-    const userId = req.user?._id; // Use _id from middleware instead of userId
+    const userId = req.user?._id;
 
     if (!userId) {
       console.log("No _id in req.user:", req.user);
@@ -19,10 +19,20 @@ export const createVerification = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    if (!idPictureUrl || !profilePictureUrl) {
-      console.log("Missing file paths:", { idPictureUrl, profilePictureUrl });
+    const idPictureFile = req.files?.idPicture?.[0];
+    const profilePictureFile = req.files?.profilePicture?.[0];
+
+    if (!idPictureFile || !profilePictureFile) {
+      console.log("Missing file uploads:", { idPictureFile, profilePictureFile });
       return res.status(400).json({ message: "Both ID and profile pictures are required" });
     }
+
+    // Convert full paths to relative paths
+    const baseUploadPath = path.join(process.cwd(), 'Uploads').replace(/\\/g, '/');
+    const idPictureUrl = idPictureFile.path.replace(baseUploadPath, '/uploads').replace(/\\/g, '/');
+    const profilePictureUrl = profilePictureFile.path.replace(baseUploadPath, '/uploads').replace(/\\/g, '/');
+
+    console.log("Generated URLs:", { idPictureUrl, profilePictureUrl });
 
     const verification = new Verification({
       userId,
@@ -44,7 +54,6 @@ export const createVerification = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 // Submit an existing verification (for drafts)
 export const submitVerification = async (req, res) => {
   try {

@@ -48,13 +48,13 @@ const imageFilter = (req, file, cb) => {
 };
 
 const documentFilter = (req, file, cb) => {
-  const allowedTypes = /pdf|doc|docx/;
+  const allowedTypes = /pdf|doc|ppt|pptx|docx/;
   const extName = allowedTypes.test(path.extname(file.originalname).toLowerCase());
   const mimeType = allowedTypes.test(file.mimetype);
   if (extName && mimeType) {
     cb(null, true);
   } else {
-    cb(new Error("Only documents (pdf, doc, docx) are allowed!"));
+    cb(new Error("Only documents (pdf, doc, docx , ppt, pptx) are allowed!"));
   }
 };
 

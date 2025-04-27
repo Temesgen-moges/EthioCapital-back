@@ -1,6 +1,5 @@
-
 import express from 'express';
-import studentApplicationController from '../controllers/studentApplication/studentApplication.js';
+import studentApplicationController from '../controllers/StudentApplication/StudentApplication.js';
 
 const router = express.Router();
 

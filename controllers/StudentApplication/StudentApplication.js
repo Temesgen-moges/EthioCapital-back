@@ -10,9 +10,13 @@ const studentApplicationController = {
         fullName,
         dateOfBirth,
         contactEmail,
+        profilePicture,
+        socialMedia,
+        portfolioDescription,
         educationHistory,
         fundingPurpose,
         fundingAmount,
+        fundingDuration,
         financialNeedsDescription,
         documents,
       } = req.body;
@@ -21,12 +25,33 @@ const studentApplicationController = {
         !fullName ||
         !dateOfBirth ||
         !contactEmail ||
+        !portfolioDescription ||
         !educationHistory ||
         !fundingAmount ||
+        !fundingDuration ||
         !financialNeedsDescription
       ) {
         console.log('[submitApplication] Missing required fields:', req.body);
         return res.status(400).json({ message: 'Missing required fields' });
+      }
+
+      // Validate social media URLs if provided
+      if (socialMedia) {
+        if (socialMedia.linkedIn && !/^https?:\/\/(www\.)?linkedin\.com\//.test(socialMedia.linkedIn)) {
+          return res.status(400).json({ message: 'Invalid LinkedIn URL' });
+        }
+        if (socialMedia.twitter && !/^https?:\/\/(www\.)?(twitter|x)\.com\//.test(socialMedia.twitter)) {
+          return res.status(400).json({ message: 'Invalid Twitter URL' });
+        }
+        if (socialMedia.github && !/^https?:\/\/(www\.)?github\.com\//.test(socialMedia.github)) {
+          return res.status(400).json({ message: 'Invalid GitHub URL' });
+        }
+      }
+
+      // Validate funding duration
+      if (!['3', '6', '9', '12'].includes(fundingDuration)) {
+        console.log('[submitApplication] Invalid funding duration:', fundingDuration);
+        return res.status(400).json({ message: 'Funding duration must be 3, 6, 9, or 12 months' });
       }
 
       const maxBase64Size = 10 * 1024 * 1024; // 10MB
@@ -49,7 +74,12 @@ const studentApplicationController = {
         }
       }
 
-      if (!req.user?.userId || !mongoose.Types.ObjectId.isValid(req.user.userId)) {
+      if (profilePicture && Buffer.byteLength(profilePicture) > maxBase64Size) {
+        console.log('[submitApplication] Profile picture exceeds 10MB');
+        return res.status(400).json({ message: 'Profile picture exceeds 10MB' });
+      }
+
+      if (!req.user?._id || !mongoose.Types.ObjectId.isValid(req.user._id)) {
         console.log('[submitApplication] Invalid user authentication:', req.user);
         return res.status(401).json({ message: 'Invalid or missing user authentication' });
       }
@@ -58,12 +88,17 @@ const studentApplicationController = {
         fullName,
         dateOfBirth,
         contactEmail,
+        profilePicture,
+        socialMedia,
+        portfolioDescription,
         educationHistory,
         fundingPurpose,
         fundingAmount,
+        fundingDuration,
+        fundingRaised: 0,
         financialNeedsDescription,
         documents,
-        userId: new mongoose.Types.ObjectId(req.user.userId),
+        userId: new mongoose.Types.ObjectId(req.user._id),
         status: 'pending',
       });
 
@@ -83,21 +118,23 @@ const studentApplicationController = {
     } catch (error) {
       console.error('[submitApplication] Error:', {
         message: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
       return res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
+
+  // Get application by ID
   getApplicationById: async (req, res) => {
     console.log('[getApplicationById] Fetching application:', {
       id: req.params.id,
-      user: req.user
+      user: req.user,
     });
     try {
       if (!['admin', 'entrepreneur', 'investor'].includes(req.user.role)) {
         console.log('[getApplicationById] Access denied: User role not authorized', {
-          userId: req.user.userId,
-          role: req.user.role
+          userId: req.user._id,
+          role: req.user.role,
         });
         return res.status(403).json({ message: 'Admin, entrepreneur, or investor access required' });
       }
@@ -107,8 +144,10 @@ const studentApplicationController = {
         return res.status(400).json({ message: 'Invalid application ID' });
       }
 
-      const application = await StudentApplication.findById(req.params.id)
-        .populate('userId', 'email fullName');
+      const application = await StudentApplication.findById(req.params.id).populate(
+        'userId',
+        'email fullName'
+      );
       if (!application) {
         console.log('[getApplicationById] Application not found:', req.params.id);
         return res.status(404).json({ message: 'Application not found' });
@@ -118,7 +157,7 @@ const studentApplicationController = {
       if (req.user.role !== 'admin' && application.status !== 'approved') {
         console.log('[getApplicationById] Access denied: Application not approved', {
           id: req.params.id,
-          status: application.status
+          status: application.status,
         });
         return res.status(403).json({ message: 'Access denied: Application not approved' });
       }
@@ -128,20 +167,20 @@ const studentApplicationController = {
     } catch (error) {
       console.error('[getApplicationById] Error:', {
         message: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
       return res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
+
   // Get all applications (admin, entrepreneur, investor)
   getApplications: async (req, res) => {
     console.log('[getApplications] User accessing route:', req.user);
     try {
-      // Allow admin, entrepreneur, and investor roles
       if (!['admin', 'entrepreneur', 'investor'].includes(req.user.role)) {
         console.log('[getApplications] Access denied: User role not authorized', {
-          userId: req.user.userId,
-          role: req.user.role
+          userId: req.user._id,
+          role: req.user.role,
         });
         return res.status(403).json({ message: 'Admin, entrepreneur, or investor access required' });
       }
@@ -149,21 +188,24 @@ const studentApplicationController = {
       const { status } = req.query;
       console.log('[getApplications] Querying with:', { status });
       const startTime = Date.now();
-      
-      // Restrict non-admin users to only see approved applications
+
       const query = req.user.role === 'admin' ? (status ? { status } : {}) : { status: 'approved' };
-      
+
       const applications = await StudentApplication.find(query)
         .populate('userId', 'email fullName')
         .sort({ createdAt: -1 });
       const queryTime = Date.now() - startTime;
-      console.log('[getApplications] Found applications:', applications.length, `Query took ${queryTime}ms`);
+      console.log(
+        '[getApplications] Found applications:',
+        applications.length,
+        `Query took ${queryTime}ms`
+      );
 
       return res.status(200).json(applications);
     } catch (error) {
       console.error('[getApplications] Error:', {
         message: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
       return res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -173,13 +215,13 @@ const studentApplicationController = {
   approveApplication: async (req, res) => {
     console.log('[approveApplication] Approving application:', {
       id: req.params.id,
-      user: req.user
+      user: req.user,
     });
     try {
       if (req.user.role !== 'admin') {
         console.log('[approveApplication] Access denied: User is not admin', {
-          userId: req.user.userId,
-          role: req.user.role
+          userId: req.user._id,
+          role: req.user.role,
         });
         return res.status(403).json({ message: 'Admin access required' });
       }
@@ -206,7 +248,7 @@ const studentApplicationController = {
     } catch (error) {
       console.error('[approveApplication] Error:', {
         message: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
       return res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -216,13 +258,13 @@ const studentApplicationController = {
   rejectApplication: async (req, res) => {
     console.log('[rejectApplication] Rejecting application:', {
       id: req.params.id,
-      user: req.user
+      user: req.user,
     });
     try {
       if (req.user.role !== 'admin') {
         console.log('[rejectApplication] Access denied: User is not admin', {
-          userId: req.user.userId,
-          role: req.user.role
+          userId: req.user._id,
+          role: req.user.role,
         });
         return res.status(403).json({ message: 'Admin access required' });
       }
@@ -249,7 +291,7 @@ const studentApplicationController = {
     } catch (error) {
       console.error('[rejectApplication] Error:', {
         message: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
       return res.status(500).json({ message: 'Server error', error: error.message });
     }

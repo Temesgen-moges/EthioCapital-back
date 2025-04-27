@@ -172,16 +172,25 @@ const userSchema = new mongoose.Schema(
       enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
+    resetPasswordToken: {
+      type: String,
+    },
+    resetPasswordExpires: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
+    suppressReservedKeysWarning: true,
   }
 );
 
-// Hash password before saving
+// Hash password before saving, only if not already hashed
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
+  if (this.isModified("password") && !this.password.startsWith("$2b$")) {
+    console.log("Hashing password in pre-save hook:", this.password);
+    this.password = await bcrypt.hash(this.password, 10);
+  }
   next();
 });
 

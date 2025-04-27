@@ -56,7 +56,6 @@
 
 // };
 
-
 import User from "../../models/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -66,42 +65,51 @@ export const login = async (req, res) => {
   console.log("req.body", req.body);
 
   const { email, password } = req.body;
-  console.log("email", email);
 
   try {
-    // Find user by email
+    // Validate input
+    if (!email || !password) {
+      console.log("Missing email or password");
+      return res.status(400).json({ message: "Email and password are required." });
+    }
+
+    // Find user
     const user = await User.findOne({ email });
-    console.log("user", user);
+    console.log("User found:", user ? user.email : "No user found");
 
     if (!user) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      console.log("No user found with email:", email);
+      return res.status(401).json({ message: "Invalid email or password." });
     }
 
-    // Compare the provided password with the hashed password
-    const isMatch = await user.comparePassword(password);
-    console.log("isMatch", isMatch);
+    // Check password
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log("Password match:", isMatch);
 
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      console.log("Invalid password for user:", email);
+      return res.status(401).json({ message: "Invalid email or password." });
     }
 
-    // Generate a JWT token
+    // Generate JWT
     const token = jwt.sign(
-      { id: user._id, role: user.role, email: user.email }, // Payload matches authMiddleware expectation
-      process.env.JWT_SECRET, // Use environment variable
-      { expiresIn: "1h" }
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
     );
+    console.log("JWT generated for user:", user.email);
 
-    // Send the user data and token in the response
     res.status(200).json({
       message: "Login successful",
+      token,
       user: {
         id: user._id,
-        fullName: user.fullName,
         email: user.email,
         role: user.role,
+        fullName: user.fullName,
+        companyName: user.companyName,
+        status: user.status,
       },
-      token,
     });
   } catch (error) {
     console.error("Login error:", error);
