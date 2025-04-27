@@ -1,6 +1,7 @@
 import User from "../../models/User.js";
 import crypto from "crypto";
-import bcrypt from "bcrypt";
+// import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 export const resetPassword = async (req, res) => {
   console.log("Inside Reset Password controller");
