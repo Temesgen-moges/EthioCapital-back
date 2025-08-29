@@ -99,27 +99,75 @@ export const getIdeaByUser = async (req, res) => {
 export const updateIdea = async (req, res) => {
   try {
     const { id } = req.params;
-    const changes = req.body;
+    const userId = req.user._id; // Use _id from authMiddleware
 
-    const idea = await BusinessIdea.findById(id);
-    if (!idea) {
-      return res.status(404).json({ message: 'Business Idea not found.' });
+    console.log("updateIdea: Request body:", req.body);
+    console.log("updateIdea: Request files:", req.files);
+    console.log("updateIdea: Attempting to update idea ID:", id, "for user ID:", userId);
+
+    // Only update title and overview
+    const parsedData = {
+      title: req.body.title,
+      overview: req.body.overview,
+    };
+
+    // Validate required fields
+    if (!parsedData.title || !parsedData.overview) {
+      console.log("updateIdea: Missing required fields");
+      return res.status(400).json({ message: "Title and overview are required." });
     }
 
-    // Ensure user owns the idea
-    if (idea.user.toString() !== req.user.userId) {
-      return res.status(403).json({ message: 'Unauthorized to update this idea.' });
+    // Find the existing idea
+    const existingIdea = await BusinessIdea.findById(id);
+    if (!existingIdea) {
+      console.log("updateIdea: Idea not found for id:", id);
+      return res.status(404).json({ message: "Business Idea not found." });
     }
 
-    await BusinessIdea.findByIdAndUpdate(id, changes, { new: true });
+    // Authorization check
+    console.log("updateIdea: Comparing idea.user:", existingIdea.user.toString(), "with userId:", userId);
+    if (existingIdea.user.toString() !== userId) {
+      console.log("updateIdea: Unauthorized user");
+      return res.status(403).json({ message: "Unauthorized to update this idea." });
+    }
+
+    // Log parsedData before update
+    console.log("updateIdea: Parsed data for update:", parsedData);
+
+    // Update the idea
+    const updatedIdea = await BusinessIdea.findByIdAndUpdate(id, parsedData, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updatedIdea) {
+      console.log("updateIdea: Update failed, no document returned for id:", id);
+      return res.status(500).json({ message: "Failed to update Business Idea." });
+    }
+
+    console.log("updateIdea: Updated idea:", updatedIdea);
 
     res.status(200).json({
-      message: 'Business Idea updated successfully!',
-      updatedIdea: idea,
+      message: "Business Idea updated successfully!",
+      idea: updatedIdea,
     });
   } catch (error) {
-    console.error('Error updating Business idea:', error);
-    res.status(500).json({ message: 'An error occurred while updating the Business idea.' });
+    console.error("updateIdea: Error updating Business idea:", error.stack);
+    console.error("updateIdea: Full error object:", JSON.stringify(error, null, 2));
+    if (error.name === "ValidationError") {
+      console.log("updateIdea: Validation errors:", error.errors);
+      return res.status(400).json({
+        message: "Validation error: " + error.message,
+        errors: Object.keys(error.errors).map((key) => ({
+          field: key,
+          message: error.errors[key].message,
+        })),
+      });
+    }
+    if (error.name === "CastError") {
+      return res.status(400).json({ message: "Invalid idea ID: " + error.message });
+    }
+    res.status(500).json({ message: "An error occurred while updating the Business idea: " + error.message });
   }
 };
 

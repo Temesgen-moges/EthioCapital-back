@@ -57,10 +57,9 @@
 // };
 
 import User from "../../models/User.js";
-// import bcrypt from "bcrypt";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
+ 
 export const login = async (req, res) => {
   console.log("Inside Login controller");
   console.log("req.body", req.body);

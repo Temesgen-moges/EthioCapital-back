@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import 'dotenv/config';
 
 const uri = process.env.MONGODB_URL || "mongodb+srv://temu1554:jAUFpYZ8EpbohZkj@capital.1jysv.mongodb.net/?retryWrites=true&w=majority&appName=Capital";
-
+// const uri= process.env.MONGODB_URL || "mongodb://localhost:27017/ethio-capital";
 console.log("uri:", uri);
 
 async function connectDB() {

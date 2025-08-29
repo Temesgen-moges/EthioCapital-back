@@ -1,4 +1,5 @@
 import express from 'express';
+import { body, validationResult } from 'express-validator';
 import {
   submitIdea,
   getIdeas,
@@ -19,7 +20,22 @@ businessRouter.post('/submit-idea', authenticate, uploadDocument.any(), submitId
 businessRouter.get('/get-ideas', authenticate, getIdeas);
 businessRouter.get('/get-idea/:id', authenticate, getIdeaById);
 businessRouter.get('/get-ideas-by-user', authenticate, getIdeaByUser);
-businessRouter.put('/update-idea/:id', authenticate, updateIdea);
+businessRouter.put(
+  '/update-idea/:id',
+  authenticate,
+  [
+    body('title').notEmpty().withMessage('Title is required'),
+    body('overview').notEmpty().withMessage('Overview is required'),
+  ],
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+  updateIdea
+);
 businessRouter.delete('/delete-idea/:id', authenticate, deleteIdea);
 businessRouter.put('/approve-idea/:id', authenticate, approveIdea);
 businessRouter.post('/like-idea/:id', authenticate, likeIdea);
