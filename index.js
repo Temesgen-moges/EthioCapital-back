@@ -25,14 +25,14 @@
 // // // const server = http.createServer(app);
 // // // const io = new Server(server, {
 // // //   cors: {
-// // //     origin: 'http://localhost:3000',
+// // //     origin: 'https://ethiocapital-front.onrender.com',
 // // //     methods: ['GET', 'POST'],
 // // //     credentials: true,
 // // //   },
 // // // });
 
 // // // // Middleware
-// // // app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+// // // app.use(cors({ origin: 'https://ethiocapital-front.onrender.com', credentials: true }));
 // // // app.use(express.json({ limit: '50mb' }));
 // // // app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // // // app.use('/uploads', express.static(path.join(process.cwd(), 'Uploads')));
@@ -99,7 +99,7 @@
 
 // // // // Redirect for success page
 // // // app.get('/success', (req, res) => {
-// // //   res.redirect('http://localhost:3000/success');
+// // //   res.redirect('https://ethiocapital-front.onrender.com/success');
 // // // });
 
 // // // // Error handling middleware
@@ -201,14 +201,14 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "https://ethiocapital-front.onrender.com",
     methods: ["GET", "POST"],
     credentials: true,
   },
 });
 
 // Middleware
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(cors({ origin: "https://ethiocapital-front.onrender.com", credentials: true }));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use("/uploads", express.static(path.join(process.cwd(), "Uploads")));
@@ -287,7 +287,7 @@ app.use("/api/v1/fund-release", fundReleaseRouter);
 
 // Redirect for success page
 app.get("/success", (req, res) => {
-  res.redirect("http://localhost:3000/success");
+  res.redirect("https://ethiocapital-front.onrender.com/success");
 });
 
 // Error handling middleware
@@ -406,7 +406,7 @@ export default app;
 // const server = http.createServer(app);
 // const io = new Server(server, {
 //   cors: {
-//     origin: 'http://localhost:3000',
+//     origin: 'https://ethiocapital-front.onrender.com',
 //     methods: ['GET', 'POST'],
 //   },
 // });
@@ -465,7 +465,7 @@ export default app;
 // app.use('/api/v1/notifications', notificationRouter); // Added notification routes
 
 // app.get('/success', (req, res) => {
-//   res.redirect('http://localhost:3000/success');
+//   res.redirect('https://ethiocapital-front.onrender.com/success');
 // });
 
 // app.use((err, req, res, next) => {
@@ -554,7 +554,7 @@ export default app;
 // const server = http.createServer(app);
 // const io = new Server(server, {
 //   cors: {
-//     origin: 'http://localhost:3000',
+//     origin: 'https://ethiocapital-front.onrender.com',
 //     methods: ['GET', 'POST'],
 //     credentials: true,
 //   },
@@ -562,7 +562,7 @@ export default app;
 
 // // Middleware
 // app.use(cors({
-//   origin: 'http://localhost:3000',
+//   origin: 'https://ethiocapital-front.onrender.com',
 //   credentials: true,
 // }));
 // app.use(express.json({ limit: '50mb' }));
@@ -639,7 +639,7 @@ export default app;
 
 // // Redirect for success page
 // app.get('/success', (req, res) => {
-//   res.redirect('http://localhost:3000/success');
+//   res.redirect('https://ethiocapital-front.onrender.com/success');
 // });
 
 // // Error handling middleware
